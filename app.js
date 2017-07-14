@@ -1,4 +1,5 @@
 //Node modules dependencies
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const favicon = require('serve-favicon');
@@ -11,16 +12,17 @@ const debug = require('debug')(`repostars:${path.basename(__filename).split('.'[
 const mongoose = require('mongoose');
 //add expressLayouts
 const expressLayouts = require('express-ejs-layouts');
-
+const passport = require('passport');
 //other dependencies
 //const dburl
-const {dbURL} = require('./config/db');
 const index = require('./routes/index');
-const users = require('./routes/users');
+//change to route auth
+const auth = require('./routes/auth');
+
 
 //add the conection of the routes and as connected "normal returns a promis we
 //add dbURL that we declared prev"
-mongoose.connect(dbURL).then( () => debug('DB Connected!'));
+mongoose.connect(process.env.MONGO_DB_URL).then( () => debug('DB Connected!'));
 
 const app = express();
 
@@ -33,6 +35,11 @@ app.set('layout', 'layout/main');
 //add the use of expressLayouts
 app.use(expressLayouts);
 
+//add
+require('./passport/github');
+app.use(passport.initialize());
+app.use(passport.session());
+
 // favicon placed uncommenting favicon
 app.use(favicon(path.join(__dirname, 'public', 'images/favicon.ico')));
 app.use(logger('dev'));
@@ -42,7 +49,9 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', index);
-app.use('/users', users);
+app.use('/auth', auth);
+// app.use('/login', auth);
+
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -59,7 +68,7 @@ app.use(function(err, req, res, next) {
 
   // render the error page
   res.status(err.status || 500);
-  res.render('error');
+  res.render('error', {title:'ERROR PAGE'});
 });
 
 module.exports = app;
